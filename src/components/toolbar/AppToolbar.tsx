@@ -48,6 +48,7 @@ const AppToolbar: FC<PropsWithChildren<AppToolbarProps>> = ({
                     xs: 'wrap',
                     lg: 'nowrap'
                 },
+                alignItems: 'center',
                 pl: {
                     xs: 'max(16px, env(safe-area-inset-left))',
                     sm: 'max(24px, env(safe-area-inset-left))'

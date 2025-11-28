@@ -138,7 +138,7 @@ const DEFAULT_THEME = createTheme({
         colorSchemeSelector: '[data-theme="%s"]',
         disableCssColorScheme: true
     },
-    defaultColorScheme: 'dark',
+    defaultColorScheme: 'purplehaze',
     ...DEFAULT_THEME_OPTIONS,
     colorSchemes: COLOR_SCHEMES
 });

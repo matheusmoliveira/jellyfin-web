@@ -54,6 +54,8 @@ const ExperimentalAppToolbar: FC<AppToolbarProps> = ({
                 <Stack
                     direction='row'
                     spacing={0.5}
+                    alignItems='center'
+                    sx={{ flexWrap: 'wrap' }}
                 >
                     <ServerButton />
 

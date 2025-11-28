@@ -1,4 +1,5 @@
-import icon from '@jellyfin/ux-web/icon-transparent.png';
+import icon from 'assets/branding/icon-transparent.png';
+
 import Button from '@mui/material/Button/Button';
 import React, { FC } from 'react';
 import { Link } from 'react-router-dom';
@@ -29,8 +30,12 @@ const ServerButton: FC = () => {
             }
             component={Link}
             to='/'
+            sx={{
+                display: 'flex',
+                alignItems: 'center'
+            }}
         >
-            {isPending ? '' : (systemInfo?.ServerName || 'Jellyfin')}
+            {isPending ? '' : (systemInfo?.ServerName || 'Play TV')}
         </Button>
     );
 };

@@ -85,10 +85,24 @@ const config = {
                 },
                 'config.json',
                 'robots.txt',
+                // Favicons - coloque suas imagens em src/favicons/
                 {
                     from: 'touchicon*.png',
-                    context: path.resolve(__dirname, 'node_modules/@jellyfin/ux-web/favicons'),
-                    to: 'favicons'
+                    context: path.resolve(__dirname, 'src/favicons'),
+                    to: 'favicons',
+                    noErrorOnMissing: true,
+                    globOptions: {
+                        ignore: ['**/.gitkeep']
+                    }
+                },
+                {
+                    from: 'favicon.ico',
+                    context: path.resolve(__dirname, 'src/favicons'),
+                    to: 'favicons',
+                    noErrorOnMissing: true,
+                    globOptions: {
+                        ignore: ['**/.gitkeep']
+                    }
                 },
                 ...Assets.map(asset => {
                     return {

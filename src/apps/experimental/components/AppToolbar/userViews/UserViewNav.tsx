@@ -104,6 +104,7 @@ const UserViewNav = () => {
                 startIcon={<Favorite />}
                 component={Link}
                 to='/home?tab=1'
+                sx={{ whiteSpace: 'nowrap' }}
             >
                 {globalize.translate(MetaView.Favorites.Name)}
             </Button>

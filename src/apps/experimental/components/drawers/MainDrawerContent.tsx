@@ -42,7 +42,10 @@ const MainDrawerContent = () => {
                         <ListItemIcon>
                             <Home />
                         </ListItemIcon>
-                        <ListItemText primary={globalize.translate('Home')} />
+                        <ListItemText 
+                            primary={globalize.translate('Home')} 
+                            primaryTypographyProps={{ noWrap: true }}
+                        />
                     </ListItemLink>
                 </ListItem>
                 <ListItem disablePadding>
@@ -50,7 +53,10 @@ const MainDrawerContent = () => {
                         <ListItemIcon>
                             <Favorite />
                         </ListItemIcon>
-                        <ListItemText primary={globalize.translate('Favorites')} />
+                        <ListItemText 
+                            primary={globalize.translate('Favorites')} 
+                            primaryTypographyProps={{ noWrap: true }}
+                        />
                     </ListItemLink>
                 </ListItem>
             </List>

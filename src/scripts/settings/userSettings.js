@@ -292,7 +292,7 @@ export class UserSettings {
             return this.set('enableBackdrops', val.toString(), false);
         }
 
-        return toBoolean(this.get('enableBackdrops', false), false);
+        return toBoolean(this.get('enableBackdrops', false), true);
     }
 
     /**
@@ -409,7 +409,7 @@ export class UserSettings {
             return this.set('dashboardTheme', val);
         }
 
-        return this.get('dashboardTheme');
+        return this.get('dashboardTheme') || 'purplehaze';
     }
 
     /**
@@ -435,7 +435,7 @@ export class UserSettings {
             return this.set('appTheme', val, false);
         }
 
-        return this.get('appTheme', false);
+        return this.get('appTheme', false) || 'purplehaze';
     }
 
     /**
