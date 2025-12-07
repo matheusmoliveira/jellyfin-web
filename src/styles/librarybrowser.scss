@@ -193,6 +193,7 @@
     display: flex;
 }
 
+
 .detailButton,
 .skinHeader {
     flex-direction: column;
@@ -387,15 +388,51 @@
 @media all and (min-width: 100em) {
     .headerTop {
         padding: 0.8em 0.8em;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        position: relative;
+    }
+
+    // Garante que o primeiro nível de filhos do headerTop (que contém headerLeft e headerRight) fique em linha
+    // Apenas em páginas de biblioteca, não em páginas de detalhes
+    .libraryPage .headerTop > div:first-of-type,
+    .homePage .headerTop > div:first-of-type {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: 100%;
+        align-items: center;
     }
 
     .headerTabs {
         align-self: center;
         width: auto;
+        max-width: 100%;
         align-items: center;
         justify-content: center;
         position: relative;
         margin-top: -4.3em;
+        overflow: visible;
+        flex-wrap: nowrap;
+    }
+
+    .skinHeader {
+        overflow: visible;
+    }
+
+    // Apenas em páginas de biblioteca, garante que headerLeft e headerRight fiquem na mesma linha
+    .libraryPage .headerLeft,
+    .homePage .headerLeft {
+        flex-shrink: 1;
+        min-width: 0;
+    }
+
+    .libraryPage .headerRight,
+    .homePage .headerRight {
+        flex-shrink: 0;
+        flex-wrap: nowrap;
+        white-space: nowrap;
     }
 
     .libraryPage:not(.noSecondaryNavPage) {

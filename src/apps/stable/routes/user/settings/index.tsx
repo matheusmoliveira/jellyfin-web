@@ -9,7 +9,6 @@ import Page from 'components/Page';
 import { AppFeature } from 'constants/appFeature';
 import LinkButton from 'elements/emby-button/LinkButton';
 import { useApi } from 'hooks/useApi';
-import { useQuickConnectEnabled } from 'hooks/useQuickConnect';
 import { useUsers } from 'hooks/useUsers';
 import globalize from 'lib/globalize';
 import browser from 'scripts/browser';
@@ -20,10 +19,6 @@ import keyboardNavigation from 'scripts/keyboardNavigation';
 const UserSettingsPage: FC = () => {
     const { user: currentUser } = useApi();
     const [ searchParams ] = useSearchParams();
-    const {
-        data: isQuickConnectEnabled,
-        isPending: isQuickConnectEnabledPending
-    } = useQuickConnectEnabled();
     const { data: users } = useUsers();
     const [ user, setUser ] = useState<UserDto>();
 
@@ -41,7 +36,7 @@ const UserSettingsPage: FC = () => {
         }
     }, [ currentUser, userId, users ]);
 
-    if (!userId || !user || isQuickConnectEnabledPending) {
+    if (!userId || !user) {
         return (
             <Loading />
         );
@@ -92,27 +87,6 @@ const UserSettingsPage: FC = () => {
                                 </div>
                             </div>
                         </LinkButton>
-
-                        {isQuickConnectEnabled && (
-                            <LinkButton
-                                href={`#/quickconnect?userId=${userId}`}
-                                className='lnkQuickConnectPreferences listItem-border'
-                                style={{
-                                    display: 'block',
-                                    margin: 0,
-                                    padding: 0
-                                }}
-                            >
-                                <div className='listItem'>
-                                    <span className='material-icons listItemIcon listItemIcon-transparent phonelink_lock' aria-hidden='true' />
-                                    <div className='listItemBody'>
-                                        <div className='listItemBodyText'>
-                                            {globalize.translate('QuickConnect')}
-                                        </div>
-                                    </div>
-                                </div>
-                            </LinkButton>
-                        )}
 
                         <LinkButton
                             href={`#/mypreferencesdisplay?userId=${userId}`}

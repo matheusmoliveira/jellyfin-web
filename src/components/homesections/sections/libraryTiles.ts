@@ -15,15 +15,17 @@ export function loadLibraryTiles(
     }: SectionOptions
 ) {
     let html = '';
-    if (userViews.length) {
-        html += '<h2 class="sectionTitle sectionTitle-cards padded-left">' + globalize.translate('HeaderMyMedia') + '</h2>';
-        if (enableOverflow) {
-            html += '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true">';
-            html += '<div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x">';
-        } else {
-            html += '<div is="emby-itemscontainer" class="itemsContainer padded-left padded-right focuscontainer-x vertical-wrap">';
-        }
+    
+    // Sempre mostra a seção, mesmo se não houver bibliotecas
+    html += '<h2 class="sectionTitle sectionTitle-cards padded-left">' + globalize.translate('HeaderMyMedia') + '</h2>';
+    if (enableOverflow) {
+        html += '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true">';
+        html += '<div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x">';
+    } else {
+        html += '<div is="emby-itemscontainer" class="itemsContainer padded-left padded-right focuscontainer-x vertical-wrap">';
+    }
 
+    if (userViews.length) {
         html += cardBuilder.getCardsHtml({
             items: userViews,
             shape: getBackdropShape(enableOverflow),
@@ -34,12 +36,13 @@ export function loadLibraryTiles(
             transition: false,
             allowBottomPadding: !enableOverflow
         });
+    }
 
-        if (enableOverflow) {
-            html += '</div>';
-        }
+
+    if (enableOverflow) {
         html += '</div>';
     }
+    html += '</div>';
 
     elem.innerHTML = html;
     imageLoader.lazyChildren(elem);

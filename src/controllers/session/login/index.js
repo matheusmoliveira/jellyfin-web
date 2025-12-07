@@ -48,70 +48,6 @@ function authenticateUserByName(page, apiClient, url, username, password) {
     });
 }
 
-function authenticateQuickConnect(apiClient, targetUrl) {
-    const url = apiClient.getUrl('/QuickConnect/Initiate');
-    apiClient.ajax({ type: 'POST', url }, true).then(res => res.json()).then(function (json) {
-        if (!json.Secret || !json.Code) {
-            console.error('Malformed quick connect response', json);
-            return false;
-        }
-
-        baseAlert({
-            dialogOptions: {
-                id: 'quickConnectAlert'
-            },
-            title: globalize.translate('QuickConnect'),
-            text: globalize.translate('QuickConnectAuthorizeCode', json.Code)
-        });
-
-        const connectUrl = apiClient.getUrl('/QuickConnect/Connect?Secret=' + json.Secret);
-
-        const interval = setInterval(function() {
-            apiClient.getJSON(connectUrl).then(async function(data) {
-                if (!data.Authenticated) {
-                    return;
-                }
-
-                clearInterval(interval);
-
-                // Close the QuickConnect dialog
-                const dlg = document.getElementById('quickConnectAlert');
-                if (dlg) {
-                    dialogHelper.close(dlg);
-                }
-
-                const result = await apiClient.quickConnect(data.Secret);
-                onLoginSuccessful(result.User.Id, result.AccessToken, apiClient, targetUrl);
-            }, function (e) {
-                clearInterval(interval);
-
-                // Close the QuickConnect dialog
-                const dlg = document.getElementById('quickConnectAlert');
-                if (dlg) {
-                    dialogHelper.close(dlg);
-                }
-
-                Dashboard.alert({
-                    message: globalize.translate('QuickConnectDeactivated'),
-                    title: globalize.translate('HeaderError')
-                });
-
-                console.error('Unable to login with quick connect', e);
-            });
-        }, 5000, connectUrl);
-
-        return true;
-    }, function(e) {
-        Dashboard.alert({
-            message: globalize.translate('QuickConnectNotActive'),
-            title: globalize.translate('HeaderError')
-        });
-
-        console.error('Quick connect error: ', e);
-        return false;
-    });
-}
-
 function onLoginSuccessful(id, accessToken, apiClient, url) {
     Dashboard.onServerChanged(id, accessToken, apiClient);
     Dashboard.navigate(url || 'home');
@@ -250,10 +186,6 @@ export default function (view, params) {
         Dashboard.navigate('forgotpassword');
     });
     view.querySelector('.btnCancel').addEventListener('click', showVisualForm);
-    view.querySelector('.btnQuick').addEventListener('click', function () {
-        authenticateQuickConnect(getApiClient(), getTargetUrl());
-        return false;
-    });
     view.querySelector('.btnManual').addEventListener('click', function () {
         view.querySelector('#txtManualName').value = '';
         showManualForm(view, true);
@@ -271,16 +203,6 @@ export default function (view, params) {
         }
 
         const apiClient = getApiClient();
-
-        apiClient.getQuickConnect('Enabled')
-            .then(enabled => {
-                if (enabled === true) {
-                    view.querySelector('.btnQuick').classList.remove('hide');
-                }
-            })
-            .catch(() => {
-                console.debug('Failed to get QuickConnect status');
-            });
 
         apiClient.getPublicUsers().then(function (users) {
             if (users.length) {

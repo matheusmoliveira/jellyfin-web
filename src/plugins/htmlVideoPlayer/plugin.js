@@ -452,17 +452,220 @@ export class HtmlVideoPlayer {
 
                 const includeCorsCredentials = await getIncludeCorsCredentials();
 
+                // Processa o manifest .m3u8 para converter URLs relativas em absolutas
+                // Isso evita o erro "Cannot read properties of undefined (reading 'trim')" do hls.js
+                let finalUrl = url;
+                let manifestBlobUrl = null;
+                
+                // Verifica se é um arquivo .m3u8
+                if (url && typeof url === 'string' && (url.includes('.m3u8') || url.toLowerCase().endsWith('.m3u8'))) {
+                    try {
+                        console.debug('[htmlVideoPlayer] Processando manifest .m3u8 para converter URLs relativas:', url);
+                        
+                        // Valida se a URL é válida antes de processar
+                        let baseUrl;
+                        try {
+                            baseUrl = new URL(url);
+                        } catch (urlErr) {
+                            // Se a URL não for absoluta, tenta construir uma URL absoluta
+                            if (url.startsWith('/')) {
+                                // URL relativa ao domínio
+                                baseUrl = new URL(url, window.location.origin);
+                            } else {
+                                throw new Error(`URL inválida: ${url}`);
+                            }
+                        }
+                        
+                        // Busca o manifest
+                        const manifestResponse = await fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/vnd.apple.mpegurl, application/x-mpegURL, */*'
+                            },
+                            credentials: includeCorsCredentials ? 'include' : 'omit'
+                        });
+
+                        if (!manifestResponse.ok) {
+                            throw new Error(`Falha ao carregar manifest: ${manifestResponse.status} ${manifestResponse.statusText}`);
+                        }
+
+                        const manifestText = await manifestResponse.text();
+                        if (!manifestText || typeof manifestText !== 'string' || manifestText.trim() === '') {
+                            throw new Error('Manifest .m3u8 está vazio ou inválido');
+                        }
+
+                        // Processa o manifest para garantir que todas as URLs sejam absolutas
+                        const basePath = baseUrl.pathname.substring(0, baseUrl.pathname.lastIndexOf('/') + 1);
+                        const baseOrigin = `${baseUrl.protocol}//${baseUrl.host}${basePath}`;
+
+                        // Função para converter URL relativa para absoluta
+                        const toAbsoluteUrl = (urlStr) => {
+                            if (!urlStr || typeof urlStr !== 'string') {
+                                return urlStr || '';
+                            }
+                            
+                            const trimmed = urlStr.trim();
+                            if (trimmed === '') {
+                                return trimmed;
+                            }
+
+                            try {
+                                // Tenta criar uma URL - se falhar, é relativa
+                                new URL(trimmed);
+                                // Se chegou aqui, já é absoluta
+                                return trimmed;
+                            } catch {
+                                // É uma URL relativa, converte para absoluta
+                                try {
+                                    const absoluteUrl = new URL(trimmed, baseOrigin);
+                                    return absoluteUrl.href;
+                                } catch (urlErr) {
+                                    console.warn(`[htmlVideoPlayer] Não foi possível converter URL: ${trimmed}`, urlErr);
+                                    // Tenta construir URL relativa ao baseOrigin
+                                    try {
+                                        // Remove barras duplicadas e constrói URL
+                                        const cleanPath = trimmed.replace(/^\/+/, '');
+                                        const absoluteUrl = new URL(cleanPath, baseOrigin);
+                                        return absoluteUrl.href;
+                                    } catch {
+                                        return trimmed; // Mantém original se não conseguir converter
+                                    }
+                                }
+                            }
+                        };
+
+                        // Processa linha por linha
+                        const processedLines = manifestText.split(/\r?\n/).map((line) => {
+                            if (!line || typeof line !== 'string') {
+                                return line || '';
+                            }
+                            
+                            const trimmed = line.trim();
+                            
+                            // Se é uma linha vazia, mantém como está
+                            if (trimmed === '') {
+                                return line;
+                            }
+                            
+                            // Se é um comentário, verifica se tem URI ou URL
+                            if (trimmed[0] === '#') {
+                                // Verifica se é uma tag HLS com URI (ex: #EXT-X-STREAM-INF:URI="...")
+                                const uriMatch = trimmed.match(/URI="([^"]+)"/i);
+                                if (uriMatch && uriMatch[1]) {
+                                    const relativeUri = uriMatch[1];
+                                    const absoluteUri = toAbsoluteUrl(relativeUri);
+                                    return line.replace(uriMatch[0], `URI="${absoluteUri}"`);
+                                }
+                                
+                                // Verifica se há URLs em outros formatos na linha (ex: #EXT-X-KEY:URI="...")
+                                const urlMatches = trimmed.match(/([^=]+)="([^"]+)"/g);
+                                if (urlMatches) {
+                                    let processedLine = line;
+                                    urlMatches.forEach(match => {
+                                        const keyValue = match.match(/([^=]+)="([^"]+)"/);
+                                        if (keyValue && keyValue[2]) {
+                                            const value = keyValue[2];
+                                            // Verifica se o valor parece ser uma URL
+                                            if (value.match(/\.(m3u8|ts|mp4|m4s|key)(\?|$|#)/i) || value.startsWith('http') || value.startsWith('/')) {
+                                                const absoluteValue = toAbsoluteUrl(value);
+                                                processedLine = processedLine.replace(match, match.replace(value, absoluteValue));
+                                            }
+                                        }
+                                    });
+                                    return processedLine;
+                                }
+                                
+                                return line;
+                            }
+                            
+                            // Se não é comentário, pode ser uma URL de arquivo
+                            // Processa qualquer linha que:
+                            // 1. Contém extensões de arquivo de mídia (.m3u8, .ts, .mp4, .m4s, .key)
+                            // 2. Começa com http (URL absoluta)
+                            // 3. Começa com /, ./, ou ../ (caminho relativo)
+                            // 4. Contém / e termina com extensão de mídia (ex: stream_0/playlist.m3u8)
+                            const hasMediaExtension = /\.(m3u8|ts|mp4|m4s|key)(\?|$|#|\s|,)/i.test(trimmed);
+                            const isAbsoluteUrl = trimmed.startsWith('http');
+                            const isRelativePath = trimmed.startsWith('/') || trimmed.startsWith('./') || trimmed.startsWith('../');
+                            const looksLikeFilePath = trimmed.includes('/') && hasMediaExtension;
+                            
+                            if (hasMediaExtension || isAbsoluteUrl || isRelativePath || looksLikeFilePath) {
+                                return toAbsoluteUrl(trimmed);
+                            }
+                            
+                            return line;
+                        });
+
+                        const processedManifest = processedLines.join('\n');
+                        
+                        // Valida se o manifest processado não está vazio
+                        if (!processedManifest || processedManifest.trim() === '') {
+                            throw new Error('Manifest processado está vazio');
+                        }
+                        
+                        // Valida se ainda há URLs relativas no manifest processado
+                        const relativeUrlPattern = /(?:^|[^"'])(?:\.\/|\.\.\/|[^\/:]+\.(?:m3u8|ts|mp4|m4s|key)(?:\?|$|#))/i;
+                        const hasRelativeUrls = processedManifest.match(relativeUrlPattern);
+                        if (hasRelativeUrls) {
+                            console.warn('[htmlVideoPlayer] Aviso: Ainda há possíveis URLs relativas no manifest processado. Verificando...');
+                            // Log das primeiras linhas para debug
+                            const firstLines = processedManifest.split(/\r?\n/).slice(0, 20).join('\n');
+                            console.debug('[htmlVideoPlayer] Primeiras linhas do manifest processado:', firstLines);
+                        }
+                        
+                        // Cria um Blob URL com o manifest processado
+                        const manifestBlob = new Blob([processedManifest], { type: 'application/vnd.apple.mpegurl' });
+                        manifestBlobUrl = URL.createObjectURL(manifestBlob);
+                        finalUrl = manifestBlobUrl;
+                        
+                        console.debug('[htmlVideoPlayer] Manifest processado com sucesso. URLs convertidas para absolutas.');
+                        console.debug('[htmlVideoPlayer] Base URL usada:', baseOrigin);
+                        
+                        // Limpa o Blob URL quando o hls.js terminar ou em caso de erro
+                        const cleanup = () => {
+                            if (manifestBlobUrl) {
+                                URL.revokeObjectURL(manifestBlobUrl);
+                                manifestBlobUrl = null;
+                            }
+                        };
+                        
+                        // Armazena a função de cleanup e a baseOrigin para debug
+                        this._manifestBlobUrlCleanup = cleanup;
+                        this._manifestBaseOrigin = baseOrigin;
+                    } catch (manifestErr) {
+                        console.error('[htmlVideoPlayer] Erro ao processar manifest:', manifestErr);
+                        console.error('[htmlVideoPlayer] Stack trace:', manifestErr.stack);
+                        // Se falhar completamente, ainda tenta usar a URL original
+                        // Mas isso pode causar o erro de .trim() se houver URLs relativas
+                        console.warn('[htmlVideoPlayer] Usando URL original (pode falhar se houver URLs relativas no manifest)');
+                    }
+                }
+
                 const hls = new Hls({
                     startPosition: options.playerStartPositionTicks / 10000000,
                     manifestLoadingTimeOut: 20000,
                     maxBufferLength: maxBufferLength,
                     maxMaxBufferLength: maxBufferLength,
                     videoPreference: { preferHDR: true },
-                    xhrSetup(xhr) {
+                    xhrSetup(xhr, url) {
                         xhr.withCredentials = includeCorsCredentials;
+                        // Log para debug se detectar URL relativa
+                        if (url && !url.startsWith('http') && !url.startsWith('blob:') && !url.startsWith('data:')) {
+                            console.warn('[htmlVideoPlayer] URL relativa detectada no xhrSetup do hls.js:', url);
+                            if (this._manifestBaseOrigin) {
+                                try {
+                                    const absoluteUrl = new URL(url, this._manifestBaseOrigin);
+                                    console.warn('[htmlVideoPlayer] URL relativa deveria ser:', absoluteUrl.href);
+                                } catch (urlErr) {
+                                    console.warn('[htmlVideoPlayer] Erro ao converter URL:', urlErr);
+                                }
+                            }
+                        }
                     }
                 });
-                hls.loadSource(url);
+                
+                console.debug('[htmlVideoPlayer] Carregando fonte HLS:', finalUrl, finalUrl.startsWith('blob:') ? '(Blob URL)' : '(URL original)');
+                hls.loadSource(finalUrl);
                 hls.attachMedia(elem);
 
                 bindEventsToHlsPlayer(this, hls, elem, this.onError, resolve, reject);
@@ -849,6 +1052,12 @@ export class HtmlVideoPlayer {
 
     destroy() {
         this.setSubtitleOffset.cancel();
+
+        // Limpa o Blob URL do manifest processado se existir
+        if (this._manifestBlobUrlCleanup) {
+            this._manifestBlobUrlCleanup();
+            this._manifestBlobUrlCleanup = null;
+        }
 
         destroyHlsPlayer(this);
         destroyFlvPlayer(this);

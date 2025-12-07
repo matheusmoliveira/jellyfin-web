@@ -1960,6 +1960,7 @@ export default function (view, params) {
     }
 
     function playItem(item, startPosition) {
+        // Usa o player padrão do Jellyfin
         const playOptions = getPlayOptions(startPosition);
         playOptions.items = [item];
         playbackManager.play(playOptions);

@@ -5,7 +5,6 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import Download from '@mui/icons-material/Download';
 import Edit from '@mui/icons-material/Edit';
 import Logout from '@mui/icons-material/Logout';
-import PhonelinkLock from '@mui/icons-material/PhonelinkLock';
 import Settings from '@mui/icons-material/Settings';
 import Storage from '@mui/icons-material/Storage';
 import Divider from '@mui/material/Divider';
@@ -19,7 +18,6 @@ import { Link } from 'react-router-dom';
 import { appHost } from 'components/apphost';
 import { AppFeature } from 'constants/appFeature';
 import { useApi } from 'hooks/useApi';
-import { useQuickConnectEnabled } from 'hooks/useQuickConnect';
 import globalize from 'lib/globalize';
 import shell from 'scripts/shell';
 import Dashboard from 'utils/dashboard';
@@ -36,7 +34,6 @@ const AppUserMenu: FC<AppUserMenuProps> = ({
     onMenuClose
 }) => {
     const { user } = useApi();
-    const { data: isQuickConnectEnabled } = useQuickConnectEnabled();
 
     const onDownloadManagerClick = useCallback(() => {
         shell.openDownloadManager();
@@ -161,22 +158,6 @@ const AppUserMenu: FC<AppUserMenuProps> = ({
                     <ListItemText primary={globalize.translate('MetadataManager')} />
                 </MenuItem>
             ])}
-
-            <Divider />
-            {isQuickConnectEnabled && (
-                <MenuItem
-                    component={Link}
-                    to='/quickconnect'
-                    onClick={onMenuClose}
-                >
-                    <ListItemIcon>
-                        <PhonelinkLock />
-                    </ListItemIcon>
-                    <ListItemText>
-                        {globalize.translate('QuickConnect')}
-                    </ListItemText>
-                </MenuItem>
-            )}
 
             {appHost.supports(AppFeature.MultiServer) && (
                 <MenuItem
