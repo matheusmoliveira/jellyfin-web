@@ -89,7 +89,16 @@ const ConnectionRequired: FunctionComponent<ConnectionRequiredProps> = ({
                 }
                 return;
             case ConnectionState.ServerSelection:
-                // Bounce to select server page
+                // Servidor fixo - não mostrar tela de seleção de servidor
+                // Tentar conectar automaticamente ao servidor padrão se estiver no app Android
+                if (window.NativeShell && typeof window.NativeShell.selectServer === 'function') {
+                    // No app Android, o servidor padrão já está configurado
+                    // Não mostrar a tela de seleção, apenas aguardar a conexão
+                    console.debug('[ConnectionRequired] ServerSelection detected in Android app, skipping select server page');
+                    // Não fazer nada - o servidor padrão será conectado automaticamente
+                    return;
+                }
+                // Para web, ainda mostrar a tela de seleção (comportamento original)
                 console.debug('[ConnectionRequired] redirecting to select server page');
                 navigateIfNotThere(BounceRoutes.SelectServer);
                 return;
