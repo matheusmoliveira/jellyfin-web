@@ -290,7 +290,8 @@ const UserSettingsPage: FC = () => {
                                 {globalize.translate('HeaderUser')}
                             </h2>
 
-                            {appHost.supports(AppFeature.MultiServer) && (
+                            {/* Servidor fixo - não mostrar opção de seleção de servidor no app Android */}
+                            {appHost.supports(AppFeature.MultiServer) && !(window.NativeShell && typeof window.NativeShell.selectServer === 'function') && (
                                 <LinkButton
                                     onClick={Dashboard.selectServer}
                                     className='selectServer listItem-border'

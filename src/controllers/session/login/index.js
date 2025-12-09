@@ -198,8 +198,12 @@ export default function (view, params) {
         loading.show();
         libraryMenu.setTransparentMenu(true);
 
-        if (!appHost.supports(AppFeature.MultiServer)) {
-            view.querySelector('.btnSelectServer').classList.add('hide');
+        // Servidor fixo - ocultar botão de seleção de servidor no app Android
+        if (!appHost.supports(AppFeature.MultiServer) || (window.NativeShell && typeof window.NativeShell.selectServer === 'function')) {
+            const btnSelectServer = view.querySelector('.btnSelectServer');
+            if (btnSelectServer) {
+                btnSelectServer.classList.add('hide');
+            }
         }
 
         const apiClient = getApiClient();

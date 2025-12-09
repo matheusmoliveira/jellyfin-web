@@ -159,7 +159,8 @@ const AppUserMenu: FC<AppUserMenuProps> = ({
                 </MenuItem>
             ])}
 
-            {appHost.supports(AppFeature.MultiServer) && (
+            {/* Servidor fixo - não mostrar opção de seleção de servidor no app Android */}
+            {appHost.supports(AppFeature.MultiServer) && !(window.NativeShell && typeof window.NativeShell.selectServer === 'function') && (
                 <MenuItem
                     onClick={onSelectServerClick}
                 >

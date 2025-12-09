@@ -349,7 +349,8 @@ function refreshLibraryInfoInDrawer(user) {
         html += globalize.translate('HeaderUser');
         html += '</h3>';
 
-        if (appHost.supports(AppFeature.MultiServer)) {
+        // Servidor fixo - não mostrar opção de seleção de servidor no app Android
+        if (appHost.supports(AppFeature.MultiServer) && !(window.NativeShell && typeof window.NativeShell.selectServer === 'function')) {
             html += `<a is="emby-linkbutton" class="navMenuOption lnkMediaFolder btnSelectServer" data-itemid="selectserver" href="#"><span class="material-icons navMenuOptionIcon storage" aria-hidden="true"></span><span class="navMenuOptionText">${globalize.translate('SelectServer')}</span></a>`;
         }
 
